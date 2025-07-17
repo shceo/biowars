@@ -1,0 +1,5 @@
+aiogram~=3.21.0           
+tortoise-orm[asyncpg]>=0.25
+python-dotenv>=1.0         # для .env
+pydantic>=2.4,<3.0         # Pydantic 2.x
+pydantic-settings>=2.10    # BaseSettings для Pydantic 2
