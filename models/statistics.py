@@ -2,7 +2,7 @@
 from tortoise import fields, models
 
 class Statistics(models.Model):
-    id                = fields.IntField(pk=True)
+    id = fields.IntField(pk=True)
     # связь «один к одному» с лабораторией
     lab: fields.OneToOneRelation["Laboratory"] = fields.OneToOneField(
         "models.Laboratory",
