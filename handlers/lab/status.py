@@ -74,7 +74,7 @@ async def cmd_lab_status(message: types.Message):
     text = (
         f"<b>🔬 Лаборатория игрока:</b> "
         f"<a href=\"tg://openmessage?user_id={user_id}\">{message.from_user.full_name}</a>\n"
-        f"{corp_line}\n\n"
+        f"{corp_line}\n"
 
         f"<b>🔋 Активность: [{blocks}] {lab.activity}%</b>\n"
         f"<blockquote>Майнинг +{lab.mining_bonus}% 💎 | Премия +{lab.premium_bonus}% 🧬</blockquote>\n"
