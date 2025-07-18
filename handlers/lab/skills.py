@@ -46,8 +46,6 @@ UPGRADE_PARAMS = {
         "growth": 2.4,
         "command": "++квалификация",
     },
-       
-    },
     "pathogen": {
         "emoji": "🧪",
         "name": "патогена",
