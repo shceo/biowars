@@ -7,10 +7,13 @@ from aiogram import Router, types, F
 from aiogram.filters import Command
 from tortoise.exceptions import DoesNotExist
 
-from models.player import Player
-from models.laboratory import Laboratory
-from models.skill import Skill
-from models.statistics import Statistics
+from services.lab_service import (
+    get_player_cached,
+    get_lab_cached,
+    get_skill_cached,
+    get_stats_cached,
+)
+
 from models.pathogen import Pathogen
 
 router = Router()
@@ -24,14 +27,14 @@ async def cmd_lab_status(message: types.Message):
 
     # 1) Проверка, что игрок есть
     try:
-        player = await Player.get(telegram_id=user_id)
+        player = await get_player_cached(user_id)
     except DoesNotExist:
         return await message.answer("Сначала отправьте /start, чтобы зарегистрироваться.")
 
     # 2) Загружаем лабораторию + связи
-    lab = await Laboratory.get(player=player).prefetch_related("stats", "corporation")
-    stats = await lab.stats
-    skills = await Skill.get(lab=lab)
+    lab = await get_lab_cached(player)
+    stats = await get_stats_cached(lab)
+    skills = await get_skill_cached(lab)
 
     # 3) Берём последний созданный патоген (если был)
     pathogen = await Pathogen.filter(lab=lab).order_by("-created_at").first()
