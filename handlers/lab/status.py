@@ -74,7 +74,7 @@ async def cmd_lab_status(message: types.Message):
     text = (
         f"<b>🔬 Лаборатория игрока:</b> "
         f"<a href=\"tg://openmessage?user_id={user_id}\">[🎪] {message.from_user.full_name}</a>\n"
-        f"{corp_line}"
+        f"{corp_line}\n\n"
 
         f"<b>🔋 Активность: [{blocks}] {lab.activity}%</b>\n"
         f"<blockquote>Майнинг +{lab.mining_bonus}% 💎 | Премия +{lab.premium_bonus}% 🧬</blockquote>\n"
@@ -94,7 +94,7 @@ async def cmd_lab_status(message: types.Message):
         f"<blockquote>☢️ Био‑опыт: {stats.bio_experience}\n"
         f"🧬 Био‑ресурс: {stats.bio_resource}\n"
         f"😷 Спецопераций: {stats.operations_done}/{stats.operations_total} ({ops_pct})\n"
-        f"🥽 Предотвращены: {stats.operations_blocked}/{stats.operations_total} ({blocked_pct})</blockquote>\n"
+        f"🥽 Предотвращены: {stats.operations_blocked}/{stats.operations_total} ({blocked_pct})</blockquote>\n\n"
 
         f"<b>🤒 Заражённых: {stats.infected_count}\n"
         f"😨 Своих болезней: {stats.own_diseases}</b>"
