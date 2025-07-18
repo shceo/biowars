@@ -1,4 +1,5 @@
 from aiogram import Router, types, F
+import re
 from tortoise.exceptions import DoesNotExist
 
 from services.lab_service import (
@@ -55,6 +56,10 @@ UPGRADE_PARAMS = {
     },
 }
 
+COMMAND_TO_FIELD = {
+    params["command"]: field for field, params in UPGRADE_PARAMS.items()
+}
+
 
 def calc_cost(field: str, level: int) -> int:
     """Return price for upgrading `field` from `level` to `level + 1`."""
@@ -63,6 +68,27 @@ def calc_cost(field: str, level: int) -> int:
     growth = params["growth"] / 100
     price = base * ((1 + growth) ** (level - 1))
     return int(round(price))
+
+
+def calc_total_cost(field: str, level: int, amount: int) -> int:
+    """Return total cost for upgrading `field` by `amount` levels."""
+    total = 0
+    for i in range(amount):
+        total += calc_cost(field, level + i)
+    return total
+
+
+def calc_max_purchase(field: str, level: int, available: float, limit: int = 100) -> tuple[int, int]:
+    """Return maximum purchasable levels and their cost given available resources."""
+    bought = 0
+    spent = 0
+    while bought < limit:
+        cost = calc_cost(field, level + bought)
+        if spent + cost > available:
+            break
+        spent += cost
+        bought += 1
+    return bought, spent
 
 router = Router()
 
@@ -159,3 +185,62 @@ async def confirm_upgrade(callback: types.CallbackQuery):
 async def hide_message(callback: types.CallbackQuery):
     await callback.message.delete()
     await callback.answer()
+
+
+@router.message(F.text.regexp(r'^[/\.]?\+\+'))
+async def upgrade_by_command(message: types.Message):
+    """Handle text commands for skill upgrades."""
+    text = message.text.lstrip('./').strip()
+    parts = text.split(maxsplit=1)
+    command = parts[0].lower()
+    arg = parts[1] if len(parts) > 1 else '1'
+
+    field = COMMAND_TO_FIELD.get(command)
+    if not field:
+        return
+
+    try:
+        player = await get_player_cached(message.from_user.id)
+    except DoesNotExist:
+        return await message.answer("Сначала отправьте /start")
+
+    lab = await get_lab_cached(player)
+    skills = await get_skill_cached(lab)
+    stats = await get_stats_cached(lab)
+
+    current = getattr(skills, field, 0) if field != 'pathogen' else lab.max_pathogens
+
+    if arg.lower() == 'макс':
+        amount, cost = calc_max_purchase(field, current, stats.bio_resource)
+        if amount == 0:
+            return await message.answer("Недостаточно био-ресурсов")
+    else:
+        try:
+            amount = int(arg)
+        except ValueError:
+            return await message.answer("Укажите число уровней или 'макс'")
+        amount = max(1, min(100, amount))
+        cost = calc_total_cost(field, current, amount)
+        if cost > stats.bio_resource:
+            return await message.answer("Недостаточно био-ресурсов")
+
+    stats.bio_resource -= cost
+    await stats.save()
+
+    if field == 'pathogen':
+        lab.max_pathogens += amount
+        lab.free_pathogens += amount
+        new_level = lab.max_pathogens
+        await lab.save()
+    else:
+        setattr(skills, field, current + amount)
+        new_level = current + amount
+        await skills.save()
+
+    params = UPGRADE_PARAMS[field]
+    text = (
+        f"{params['emoji']}<b> Усиление {params['name']} на {amount} (до {new_level}) выполнено\n"
+        f"🎉 Потрачено: 🧬 {int(cost)} био-ресурсов</b>"
+    )
+
+    await message.answer(text)
