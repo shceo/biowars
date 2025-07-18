@@ -9,8 +9,8 @@ class Statistics(models.Model):
         related_name="stats"
     )
 
-    bio_experience     = fields.FloatField(default=0.0)
-    bio_resource       = fields.FloatField(default=0.0)
+    bio_experience     = fields.FloatField(default=0)
+    bio_resource       = fields.FloatField(default=0)
     operations_total   = fields.IntField(default=0)
     operations_done    = fields.IntField(default=0)
     operations_blocked = fields.IntField(default=0)

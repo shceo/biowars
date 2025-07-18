@@ -67,8 +67,8 @@ async def cmd_lab_status(message: types.Message):
         ops_pct       = f"{stats.operations_done / stats.operations_total:.0%}"
         blocked_pct   = f"{stats.operations_blocked / stats.operations_total:.0%}"
     else:
-        ops_pct       = "0%"
-        blocked_pct   = "0%"
+        ops_pct = "0%"
+        blocked_pct = "0%"
 
     # 8) HTML‑текст
     text = (
