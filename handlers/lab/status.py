@@ -15,6 +15,7 @@ from services.lab_service import (
 )
 
 from models.pathogen import Pathogen
+from keyboards.lab_kb import lab_keyboard
 
 router = Router()
 
@@ -42,11 +43,14 @@ async def cmd_lab_status(message: types.Message):
 
     # 4) Данные корпорации
     if lab.corporation:
-        corp_name  = lab.corporation.name
+        corp_name = lab.corporation.name
         corp_tg_id = lab.corporation.tg_id
+        corp_line = (
+            f"🏢 В составе корпорации: "
+            f"«<a href=\"tg://openmessage?user_id={corp_tg_id}\">{corp_name}</a>»\n\n"
+        )
     else:
-        corp_name  = "—"
-        corp_tg_id = user_id
+        corp_line = ""
 
     # 5) Активность
     blocks = "▪️" * max(1, lab.activity // 20)
@@ -70,8 +74,7 @@ async def cmd_lab_status(message: types.Message):
     text = (
         f"<b>🔬 Лаборатория игрока:</b> "
         f"<a href=\"tg://openmessage?user_id={user_id}\">[🎪] {message.from_user.full_name}</a>\n"
-        f"🏢 В составе корпорации: "
-        f"«<a href=\"tg://openmessage?user_id={corp_tg_id}\">{corp_name}</a>»\n\n"
+        f"{corp_line}"
 
         f"<b>🔋 Активность: [{blocks}] {lab.activity}%</b>\n"
         f"<blockquote>Майнинг +{lab.mining_bonus}% 💎 | Премия +{lab.premium_bonus}% 🧬</blockquote>\n"
@@ -97,4 +100,4 @@ async def cmd_lab_status(message: types.Message):
         f"😨 Своих болезней: {stats.own_diseases}</b>"
     )
 
-    await message.answer(text)
+    await message.answer(text, reply_markup=lab_keyboard())
