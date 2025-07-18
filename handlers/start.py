@@ -16,9 +16,20 @@ async def cmd_start(message: types.Message):
         defaults={"full_name": message.from_user.full_name},
     )
     if created:
-        # Создаём пустую лабораторию + связанные записи
-        lab = await Laboratory.create(player=player)
-        await Skill.create(lab=lab)
+        # Создаём лабораторию с начальными данными + связанные записи
+        lab = await Laboratory.create(
+            player=player,
+            free_pathogens=10,
+            max_pathogens=10,
+        )
+        await Skill.create(
+            lab=lab,
+            infectivity=1,
+            immunity=1,
+            lethality=1,
+            safety=1,
+            qualification=1,
+        )
         await Statistics.create(lab=lab)
 
     # Приветственный текст
