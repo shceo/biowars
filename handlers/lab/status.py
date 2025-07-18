@@ -100,4 +100,4 @@ async def cmd_lab_status(message: types.Message):
         f"😨 Своих болезней: {stats.own_diseases}</b>"
     )
 
-    await message.answer(text, reply_markup=lab_keyboard())
+    await message.answer(text, reply_markup=lab_keyboard(user_id))
