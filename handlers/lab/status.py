@@ -91,8 +91,8 @@ async def cmd_lab_status(message: types.Message):
         f"⏱️ До нового патогена: {secs} сек.</blockquote>\n\n"
 
         f"<b>📊 Статистика:</b>\n"
-        f"<blockquote>☢️ Био‑опыт: {stats.bio_experience}\n"
-        f"🧬 Био‑ресурс: {stats.bio_resource}\n"
+        f"<blockquote>☢️ Био‑опыт: {int(stats.bio_experience)}\n"
+        f"🧬 Био‑ресурс: {int(stats.bio_resource)}\n"
         f"😷 Спецопераций: {stats.operations_done}/{stats.operations_total} ({ops_pct})\n"
         f"🥽 Предотвращены: {stats.operations_blocked}/{stats.operations_total} ({blocked_pct})</blockquote>\n\n"
 
@@ -100,4 +100,4 @@ async def cmd_lab_status(message: types.Message):
         f"😨 Своих болезней: {stats.own_diseases}</b>"
     )
 
-    await message.answer(text, reply_markup=lab_keyboard())
+    await message.answer(text, reply_markup=lab_keyboard(user_id))
