@@ -44,8 +44,6 @@ UPGRADE_PARAMS = {
         "name": "квалификации",
         "base_cost": 6,
         "growth": 2.4,
-        "command": "++иммунитет",
-    },
         "command": "++квалификация",
     },
     "pathogen": {
@@ -93,10 +91,11 @@ async def upgrade_skill(callback: types.CallbackQuery):
     if not params:
         return await callback.answer("Неизвестный параметр", show_alert=True)
 
-    current = getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens
+    current = (getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens)
+    cost = calc_cost(field, current)
     text = (
         f"<b>{params['emoji']} Прокачка {params['name']} на 1 ур (до {current + 1})\n"
-        f"🧬 Цена: {params['cost']} био-ресурсов</b>\n\n"
+        f"🧬 Цена: {cost} био-ресурсов</b>\n\n"
         f"<b><i>Команда: \"</i></b><code>{params['command']} {current + 1}</code><b><i>\"</i></b>"
     )
 
@@ -129,12 +128,10 @@ async def confirm_upgrade(callback: types.CallbackQuery):
     if not params:
         return await callback.answer("Неизвестный параметр", show_alert=True)
 
-    current = getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens
+    current = (getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens)
     cost = calc_cost(field, current)
-
     if stats.bio_resource < cost:
         return await callback.answer("Недостаточно био-ресурсов", show_alert=True)
-
     stats.bio_resource -= cost
     await stats.save()
 
@@ -155,6 +152,7 @@ async def confirm_upgrade(callback: types.CallbackQuery):
 
     await callback.message.edit_text(text, reply_markup=hide_keyboard())
     await callback.answer()
+
 
 
 @router.callback_query(F.data == "hide")
