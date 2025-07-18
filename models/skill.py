@@ -9,11 +9,11 @@ class Skill(models.Model):
         related_name="skills"
     )
 
-    infectivity   = fields.IntField(default=0)
-    immunity      = fields.IntField(default=0)
-    lethality     = fields.IntField(default=0)
-    safety        = fields.IntField(default=0)
-    qualification = fields.IntField(default=0)
+    infectivity   = fields.IntField(default=1)
+    immunity      = fields.IntField(default=1)
+    lethality     = fields.IntField(default=1)
+    safety        = fields.IntField(default=1)
+    qualification = fields.IntField(default=1)
 
     class Meta:
         table = "lab_skills"

@@ -5,6 +5,7 @@ from models.player import Player
 from models.laboratory import Laboratory
 from models.skill import Skill
 from models.statistics import Statistics
+from services.cache import lab_cache
 
 router = Router()
 
@@ -16,10 +17,16 @@ async def cmd_start(message: types.Message):
         defaults={"full_name": message.from_user.full_name},
     )
     if created:
-        # Создаём пустую лабораторию + связанные записи
-        lab = await Laboratory.create(player=player)
+        # Создаём лабораторию с начальными параметрами и связанные записи
+        lab = await Laboratory.create(
+            player=player,
+            activity=1,
+            free_pathogens=10,
+            max_pathogens=10,
+        )
         await Skill.create(lab=lab)
         await Statistics.create(lab=lab)
+        await lab_cache.invalidate(message.from_user.id)
 
     # Приветственный текст
     welcome_text = (

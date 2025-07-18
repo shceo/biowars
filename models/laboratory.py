@@ -14,12 +14,12 @@ class Laboratory(models.Model):
         related_name="labs"
     )
 
-    activity      = fields.IntField(default=0)
+    activity      = fields.IntField(default=1)
     mining_bonus  = fields.IntField(default=50)
     premium_bonus = fields.IntField(default=10)
 
-    free_pathogens   = fields.IntField(default=0)
-    max_pathogens    = fields.IntField(default=0)
+    free_pathogens   = fields.IntField(default=10)
+    max_pathogens    = fields.IntField(default=10)
     next_pathogen_at = fields.DatetimeField(null=True)
 
     class Meta:

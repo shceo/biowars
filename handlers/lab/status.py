@@ -12,6 +12,7 @@ from models.laboratory import Laboratory
 from models.skill import Skill
 from models.statistics import Statistics
 from models.pathogen import Pathogen
+from services.cache import lab_cache
 
 router = Router()
 
@@ -22,19 +23,19 @@ router = Router()
 async def cmd_lab_status(message: types.Message):
     user_id = message.from_user.id
 
-    # 1) Проверка, что игрок есть
+    # Загружаем лабораторию из кэша или базы
     try:
-        player = await Player.get(telegram_id=user_id)
+        data = await lab_cache.get_lab_data(user_id)
     except DoesNotExist:
         return await message.answer("Сначала отправьте /start, чтобы зарегистрироваться.")
 
-    # 2) Загружаем лабораторию + связи
-    lab = await Laboratory.get(player=player).prefetch_related("stats", "corporation")
-    stats = await lab.stats
-    skills = await Skill.get(lab=lab)
+    player = data["player"]
+    lab = data["lab"]
+    stats = data["stats"]
+    skills = data["skills"]
 
     # 3) Берём последний созданный патоген (если был)
-    pathogen = await Pathogen.filter(lab=lab).order_by("-created_at").first()
+    pathogen = data.get("pathogen")
     pathogen_name = pathogen.name if pathogen else None
 
     # 4) Данные корпорации
