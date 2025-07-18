@@ -9,13 +9,20 @@ ADMIN_IDS = {1806169479, 1194325722}
 
 router = Router()
 
-@router.message(F.text.regexp(r"^\.буст\s+(\d+)\s+(\S+)", flags=re.IGNORECASE))
-async def cmd_boost(message: types.Message, regexp: re.Match):
+@router.message(F.text.regexp(r"^\.буст\s+\d+\s+\S+", flags=re.IGNORECASE))
+async def cmd_boost(message: types.Message):
+    # внутри разбираем
+    match = re.match(r"^\.буст\s+(\d+)\s+(\S+)", message.text, flags=re.IGNORECASE)
+    if not match:
+        return
+
     if message.from_user.id not in ADMIN_IDS:
         return
 
-    amount = int(regexp.group(1))
-    user_ref = regexp.group(2)
+    amount = int(match.group(1))
+    user_ref = match.group(2)
+    if not user_ref:
+        return await message.answer("Укажите пользователя в формате @username или ID")
 
     target_id = None
     if user_ref.startswith("@"):
