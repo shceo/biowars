@@ -31,6 +31,8 @@ async def main():
     dp.include_router(start_router)
     from handlers.lab.status import router as lab_status_router
     dp.include_router(lab_status_router)
+    from handlers.lab.skills import router as lab_skills_router
+    dp.include_router(lab_skills_router)
 
     # TODO: подключите сюда остальные роутеры, например:
     # from handlers.lab.status import router as lab_status_router
