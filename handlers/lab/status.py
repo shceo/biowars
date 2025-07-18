@@ -73,7 +73,7 @@ async def cmd_lab_status(message: types.Message):
     # 8) HTML‑текст
     text = (
         f"<b>🔬 Лаборатория игрока:</b> "
-        f"<a href=\"tg://openmessage?user_id={user_id}\">[🎪] {message.from_user.full_name}</a>\n"
+        f"<a href=\"tg://openmessage?user_id={user_id}\">{message.from_user.full_name}</a>\n"
         f"{corp_line}\n\n"
 
         f"<b>🔋 Активность: [{blocks}] {lab.activity}%</b>\n"
