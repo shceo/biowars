@@ -53,7 +53,7 @@ async def cmd_lab_status(message: types.Message):
         corp_line = ""
 
     # 5) Активность
-    blocks = "▪️" * max(1, lab.activity // 20)
+    blocks = "▪️▫️▫️▫️▫️" * max(1, lab.activity // 20)
 
     # 6) До нового патогена
     if lab.next_pathogen_at:

@@ -16,7 +16,7 @@ UPGRADE_PARAMS = {
         "emoji": "🦠",
         "name": "заразности патогена",
         "base_cost": 5,
-        "growth": 2.5,
+        "growth": 8,
         "command": "++зз",
     },
     "immunity": {
