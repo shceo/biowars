@@ -58,9 +58,9 @@ async def cmd_lab_status(message: types.Message):
     # 6) До нового патогена
     if lab.next_pathogen_at:
         delta = lab.next_pathogen_at - datetime.utcnow()
-        secs  = max(0, int(delta.total_seconds()))
+        mins  = max(0, int(delta.total_seconds()))
     else:
-        secs = 0
+        mins = 0
 
     # 7) Безопасное вычисление процентов
     if stats.operations_total > 0:
@@ -88,7 +88,7 @@ async def cmd_lab_status(message: types.Message):
         f"☠️ Летальность: {skills.lethality} ур.\n"
         f"🕵🏻‍♂️ Безопасность: {skills.safety} ур.\n"
         f"👩🏻‍🔬 Квалификация: {skills.qualification} ур.\n"
-        f"⏱️ До нового патогена: {secs} сек.</blockquote>\n\n"
+        f"⏱️ До нового патогена: {mins} мин.</blockquote>\n\n"
 
         f"<b>📊 Статистика:</b>\n"
         f"<blockquote>☢️ Био‑опыт: {int(stats.bio_experience)}\n"
