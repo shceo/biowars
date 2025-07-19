@@ -7,7 +7,9 @@ from services.lab_service import (
     get_lab_cached,
     get_skill_cached,
     get_stats_cached,
+    process_pathogens,
 )
+from utils.formatting import short_number
 from keyboards.lab_kb import confirm_keyboard, hide_keyboard
 
 
@@ -118,10 +120,14 @@ async def upgrade_skill(callback: types.CallbackQuery):
         return await callback.answer("Неизвестный параметр", show_alert=True)
 
     current = (getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens)
+
+    if field == "qualification" and current >= 60:
+        return await callback.answer("Достигнут максимальный уровень", show_alert=True)
+
     cost = calc_cost(field, current)
     text = (
         f"<b>{params['emoji']} Прокачка {params['name']} на 1 ур (до {current + 1})\n"
-        f"🧬 Цена: {cost} био-ресурсов</b>\n\n"
+        f"🧬 Цена: {short_number(cost)} био-ресурсов</b>\n\n"
         f"<b><i>Команда: \"</i></b><code>{params['command']} {current + 1}</code><b><i>\"</i></b>"
     )
 
@@ -155,6 +161,10 @@ async def confirm_upgrade(callback: types.CallbackQuery):
         return await callback.answer("Неизвестный параметр", show_alert=True)
 
     current = (getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens)
+
+    if field == "qualification" and current >= 60:
+        return await callback.answer("Достигнут максимальный уровень", show_alert=True)
+
     cost = calc_cost(field, current)
     if stats.bio_resource < cost:
         return await callback.answer("Недостаточно био-ресурсов", show_alert=True)
@@ -171,9 +181,13 @@ async def confirm_upgrade(callback: types.CallbackQuery):
         setattr(skills, field, old_value + 1)
         await skills.save()
 
+        if field == "qualification":
+            from services.lab_service import process_pathogens
+            await process_pathogens(lab, skills)
+
     text = (
         f"{params['emoji']} Усиление {params['name']} на {old_value} ур (до {old_value + 1}) выполнено \n"
-        f"🎉 Потрачено: 🧬 {cost} био-ресурсов"
+        f"🎉 Потрачено: 🧬 {short_number(cost)} био-ресурсов"
     )
 
     await callback.message.edit_text(text, reply_markup=hide_keyboard())
@@ -211,7 +225,8 @@ async def upgrade_by_command(message: types.Message):
     current = getattr(skills, field, 0) if field != 'pathogen' else lab.max_pathogens
 
     if arg.lower() == 'макс':
-        amount, cost = calc_max_purchase(field, current, stats.bio_resource)
+        level_limit = 60 - current if field == 'qualification' else 100
+        amount, cost = calc_max_purchase(field, current, stats.bio_resource, limit=level_limit)
         if amount == 0:
             return await message.answer("Недостаточно био-ресурсов")
     else:
@@ -219,7 +234,10 @@ async def upgrade_by_command(message: types.Message):
             amount = int(arg)
         except ValueError:
             return await message.answer("Укажите число уровней или 'макс'")
-        amount = max(1, min(100, amount))
+        limit = 60 - current if field == 'qualification' else 100
+        amount = max(1, min(limit, amount))
+        if amount <= 0:
+            return await message.answer("Достигнут максимальный уровень")
         cost = calc_total_cost(field, current, amount)
         if cost > stats.bio_resource:
             return await message.answer("Недостаточно био-ресурсов")
@@ -237,10 +255,13 @@ async def upgrade_by_command(message: types.Message):
         new_level = current + amount
         await skills.save()
 
+        if field == 'qualification':
+            await process_pathogens(lab, skills)
+
     params = UPGRADE_PARAMS[field]
     text = (
         f"{params['emoji']}<b> Усиление {params['name']} на {amount} (до {new_level}) выполнено\n"
-        f"🎉 Потрачено: 🧬 {int(cost)} био-ресурсов</b>"
+        f"🎉 Потрачено: 🧬 {short_number(cost)} био-ресурсов</b>"
     )
 
     await message.answer(text)

@@ -12,7 +12,9 @@ from services.lab_service import (
     get_lab_cached,
     get_skill_cached,
     get_stats_cached,
+    process_pathogens,
 )
+from utils.formatting import short_number
 
 from models.pathogen import Pathogen
 from keyboards.lab_kb import lab_keyboard
@@ -37,6 +39,9 @@ async def cmd_lab_status(message: types.Message):
     stats = await get_stats_cached(lab)
     skills = await get_skill_cached(lab)
 
+    # update pathogen production based on current time
+    await process_pathogens(lab, skills)
+
     # 3) Берём последний созданный патоген (если был)
     pathogen = await Pathogen.filter(lab=lab).order_by("-created_at").first()
     pathogen_name = pathogen.name if pathogen else None
@@ -58,7 +63,7 @@ async def cmd_lab_status(message: types.Message):
     # 6) До нового патогена
     if lab.next_pathogen_at:
         delta = lab.next_pathogen_at - datetime.utcnow()
-        mins  = max(0, int(delta.total_seconds()))
+        mins = max(0, int(delta.total_seconds() // 60))
     else:
         mins = 0
 
@@ -79,8 +84,9 @@ async def cmd_lab_status(message: types.Message):
         f"<b>🔋 Активность: [{blocks}] {lab.activity}%</b>\n"
         f"<blockquote>Майнинг +{lab.mining_bonus}% 💎 | Премия +{lab.premium_bonus}% 🧬</blockquote>\n"
         f"🏷 Имя патогена — <code>{pathogen_name or 'None'}</code>;\n"
-        f"🧪 Свободных патогенов: {lab.free_pathogens} из {lab.max_pathogens} "
-        f"(<code>+{lab.max_pathogens - lab.free_pathogens}</code>)\n\n"
+        f"🧪 Свободных патогенов: {short_number(lab.free_pathogens)} "
+        f"из {short_number(lab.max_pathogens)} "
+        f"(<code>+{short_number(lab.max_pathogens - lab.free_pathogens)}</code>)\n\n"
 
         f"<b>🌎 Навыки:</b>\n"
         f"<blockquote>🦠 Заразность: {skills.infectivity} ур.\n"
@@ -91,13 +97,13 @@ async def cmd_lab_status(message: types.Message):
         f"⏱️ До нового патогена: {mins} мин.</blockquote>\n\n"
 
         f"<b>📊 Статистика:</b>\n"
-        f"<blockquote>☢️ Био‑опыт: {int(stats.bio_experience)}\n"
-        f"🧬 Био‑ресурс: {int(stats.bio_resource)}\n"
-        f"😷 Спецопераций: {stats.operations_done}/{stats.operations_total} ({ops_pct})\n"
-        f"🥽 Предотвращены: {stats.operations_blocked}/{stats.operations_total} ({blocked_pct})</blockquote>\n\n"
+        f"<blockquote>☢️ Био‑опыт: {short_number(stats.bio_experience)}\n"
+        f"🧬 Био‑ресурс: {short_number(stats.bio_resource)}\n"
+        f"😷 Спецопераций: {short_number(stats.operations_done)}/{short_number(stats.operations_total)} ({ops_pct})\n"
+        f"🥽 Предотвращены: {short_number(stats.operations_blocked)}/{short_number(stats.operations_total)} ({blocked_pct})</blockquote>\n\n"
 
-        f"<b>🤒 Заражённых: {stats.infected_count}\n"
-        f"😨 Своих болезней: {stats.own_diseases}</b>"
+        f"<b>🤒 Заражённых: {short_number(stats.infected_count)}\n"
+        f"😨 Своих болезней: {short_number(stats.own_diseases)}</b>"
     )
 
     await message.answer(text, reply_markup=lab_keyboard(user_id))

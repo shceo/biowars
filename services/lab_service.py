@@ -58,3 +58,33 @@ async def get_stats_cached(lab: Laboratory) -> Statistics:
     stats = await lab.stats
     _stats_cache[lab.id] = (stats, now + _CACHE_TTL)
     return stats
+
+from datetime import datetime, timedelta
+
+
+def pathogen_interval(qualification: int) -> int:
+    """Return minutes required to create a pathogen for given qualification level."""
+    return max(1, 60 - (qualification - 1))
+
+
+async def process_pathogens(lab: Laboratory, skills: Skill) -> None:
+    """Update lab.free_pathogens based on timers and skills."""
+    now = datetime.utcnow()
+    interval = pathogen_interval(skills.qualification)
+
+    if lab.free_pathogens >= lab.max_pathogens:
+        lab.next_pathogen_at = None
+        await lab.save()
+        return
+
+    if lab.next_pathogen_at is None:
+        lab.next_pathogen_at = now + timedelta(minutes=interval)
+
+    while lab.next_pathogen_at and lab.next_pathogen_at <= now and lab.free_pathogens < lab.max_pathogens:
+        lab.free_pathogens += 1
+        lab.next_pathogen_at += timedelta(minutes=interval)
+
+    if lab.free_pathogens >= lab.max_pathogens:
+        lab.next_pathogen_at = None
+
+    await lab.save()
