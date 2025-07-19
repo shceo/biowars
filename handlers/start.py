@@ -2,6 +2,8 @@
 from aiogram import Router, types
 from aiogram.filters import CommandStart
 from models.player import Player
+from datetime import datetime, timedelta
+
 from models.laboratory import Laboratory
 from models.skill import Skill
 from models.statistics import Statistics
@@ -21,6 +23,7 @@ async def cmd_start(message: types.Message):
             player=player,
             free_pathogens=10,
             max_pathogens=10,
+            next_pathogen_at=datetime.utcnow() + timedelta(minutes=60),
         )
         await Skill.create(
             lab=lab,

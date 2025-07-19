@@ -6,6 +6,7 @@ from tortoise.exceptions import DoesNotExist
 from models.player import Player
 from services.lab_service import get_lab_cached
 from models.statistics import Statistics
+from utils.formatting import short_number
 
 ADMIN_IDS = {1806169479, 1194325722}
 router = Router()
@@ -46,6 +47,6 @@ async def cmd_boost(message: types.Message):
     await stats.save()
 
     await message.answer(
-        f"✅ Админ выдал {amount} био‑ресурсов игроку "
+        f"✅ Админ выдал {short_number(amount)} био‑ресурсов игроку "
         f"<b>{player.username or player.telegram_id}</b>"
     )
