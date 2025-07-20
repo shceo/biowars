@@ -16,7 +16,6 @@ from services.lab_service import (
 )
 from utils.formatting import short_number
 
-from models.pathogen import Pathogen
 from keyboards.lab_kb import lab_keyboard
 
 router = Router()
@@ -42,9 +41,8 @@ async def cmd_lab_status(message: types.Message):
     # update pathogen production based on current time
     await process_pathogens(lab, skills)
 
-    # 3) Берём последний созданный патоген (если был)
-    pathogen = await Pathogen.filter(lab=lab).order_by("-created_at").first()
-    pathogen_name = pathogen.name if pathogen else None
+    # 3) Имя патогена, заданное игроком
+    pathogen_name = lab.pathogen_name
 
     # 4) Данные корпорации
     if lab.corporation:

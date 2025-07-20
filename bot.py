@@ -33,6 +33,8 @@ async def main():
     dp.include_router(lab_status_router)
     from handlers.lab.skills import router as lab_skills_router
     dp.include_router(lab_skills_router)
+    from handlers.lab.pathogen_name import router as pathogen_name_router
+    dp.include_router(pathogen_name_router)
     from handlers.admin import router as admin_router
     dp.include_router(admin_router)
 

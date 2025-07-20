@@ -21,6 +21,7 @@ class Laboratory(models.Model):
     free_pathogens   = fields.IntField(default=0)
     max_pathogens    = fields.IntField(default=0)
     next_pathogen_at = fields.DatetimeField(null=True)
+    pathogen_name    = fields.CharField(max_length=100, null=True)
 
     class Meta:
         table = "laboratories"
