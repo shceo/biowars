@@ -37,6 +37,8 @@ async def main():
     dp.include_router(pathogen_name_router)
     from handlers.admin import router as admin_router
     dp.include_router(admin_router)
+    from handlers.infect import router as infect_router
+    dp.include_router(infect_router)
 
     # TODO: подключите сюда остальные роутеры, например:
     # from handlers.lab.status import router as lab_status_router
