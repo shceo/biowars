@@ -79,12 +79,13 @@ async def cmd_lab_status(message: types.Message):
         f"<a href=\"tg://openmessage?user_id={user_id}\">{message.from_user.full_name}</a>\n"
         f"{corp_line}\n"
 
-        f"<b>🔋 Активность: [{blocks}] {lab.activity}%</b>\n"
-        f"<blockquote>Майнинг +{lab.mining_bonus}% 💎 | Премия +{lab.premium_bonus}% 🧬</blockquote>\n"
+        f"<b>🪫 Активность: [{blocks}] {lab.activity}%</b>\n"
+        f"<blockquote>Премия +{lab.premium_bonus}% 🧬</blockquote>\n" 
+        # Майнинг +{lab.mining_bonus}% 💎 | 
         f"🏷 Имя патогена — <code>{pathogen_name or 'None'}</code>;\n"
         f"🧪 Свободных патогенов: {short_number(lab.free_pathogens)} "
-        f"из {short_number(lab.max_pathogens)} "
-        f"(<code>+{short_number(lab.max_pathogens - lab.free_pathogens)}</code>)\n\n"
+        f"из {short_number(lab.max_pathogens)}\n\n"
+        # f"(<code>+{short_number(lab.max_pathogens - lab.free_pathogens)}</code>)\n\n"
 
         f"<b>🌎 Навыки:</b>\n"
         f"<blockquote>🦠 Заразность: {skills.infectivity} ур.\n"

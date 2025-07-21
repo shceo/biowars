@@ -184,7 +184,7 @@ async def upgrade_by_command(message: types.Message):
     text    = message.text.lstrip('./').strip()
     parts   = text.split(maxsplit=1)
     command = parts[0].lower()
-    arg     = parts[1] if len(parts)>1 else '1'
+    arg     = parts[1] if len(parts) > 1 else '1'
 
     field = COMMAND_TO_FIELD.get(command)
     if not field:
@@ -199,10 +199,15 @@ async def upgrade_by_command(message: types.Message):
     skills = await get_skill_cached(lab)
     stats  = await get_stats_cached(lab)
 
-    current = getattr(skills, field, 0) if field!='pathogen' else lab.max_pathogens
+    # ————— проверка максимума для qualification —————
+    current = getattr(skills, field, 0) if field != 'pathogen' else lab.max_pathogens
+    if field == 'qualification' and current >= 60:
+        return await message.answer("Достигнут максимальный уровень")
 
+    # дальше остальная логика без изменений, но уже с гарантией, что qualification < 60
     if arg.lower() == 'макс':
-        limit = 60-current if field=='qualification' else 100
+        # лимит 60 для qualification или 100 для остальных
+        limit = 60 - current if field == 'qualification' else 100
         amount, cost = calc_max_purchase(field, current, stats.bio_resource, limit=limit)
         if amount == 0:
             return await message.answer("Недостаточно био-ресурсов")
@@ -211,12 +216,16 @@ async def upgrade_by_command(message: types.Message):
             amount = int(arg)
         except ValueError:
             return await message.answer("Укажите число или 'макс'")
-        limit = 60-current if field=='qualification' else 100
+        limit = 60 - current if field == 'qualification' else 100
+        # теперь min(limit, amount) не даёт выйти за 60
         amount = max(1, min(limit, amount))
+        if amount <= 0:
+            return await message.answer("Достигнут максимальный уровень")
         cost = calc_total_cost(field, current, amount)
         if cost > stats.bio_resource:
             return await message.answer("Недостаточно био-ресурсов")
 
+    # применение апгрейда
     stats.bio_resource -= cost
     await stats.save()
 
@@ -226,10 +235,10 @@ async def upgrade_by_command(message: types.Message):
         new_level = lab.max_pathogens
         await lab.save()
     else:
-        setattr(skills, field, current+amount)
-        new_level = current+amount
+        setattr(skills, field, current + amount)
+        new_level = current + amount
         await skills.save()
-        if field=='qualification':
+        if field == 'qualification':
             await process_pathogens(lab, skills)
 
     params = UPGRADE_PARAMS[field]
@@ -237,3 +246,4 @@ async def upgrade_by_command(message: types.Message):
         f"{params['emoji']}<b> Усиление {params['name']} на {amount} (до {new_level}) выполнено\n"
         f"🎉 Потрачено: 🧬 {short_number(cost)} био-ресурсов</b>"
     )
+    
