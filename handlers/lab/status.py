@@ -1,7 +1,7 @@
 # handlers/lab/status.py
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from aiogram import Router, types, F
 from aiogram.filters import Command
@@ -60,7 +60,7 @@ async def cmd_lab_status(message: types.Message):
 
     # 6) До нового патогена
     if lab.next_pathogen_at:
-        delta = lab.next_pathogen_at - datetime.utcnow()
+        delta = lab.next_pathogen_at - datetime.now(timezone.utc)
         mins = max(0, int(delta.total_seconds() // 60))
     else:
         mins = 0

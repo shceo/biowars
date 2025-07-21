@@ -59,7 +59,7 @@ async def get_stats_cached(lab: Laboratory) -> Statistics:
     _stats_cache[lab.id] = (stats, now + _CACHE_TTL)
     return stats
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def pathogen_interval(qualification: int) -> int:
@@ -69,7 +69,7 @@ def pathogen_interval(qualification: int) -> int:
 
 async def process_pathogens(lab: Laboratory, skills: Skill) -> None:
     """Update lab.free_pathogens based on timers and skills."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     interval = pathogen_interval(skills.qualification)
 
     if lab.free_pathogens >= lab.max_pathogens:

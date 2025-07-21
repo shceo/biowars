@@ -6,7 +6,7 @@ class Player(models.Model):
     telegram_id = fields.BigIntField(unique=True)
     username     = fields.CharField(max_length=32, null=True)
     full_name    = fields.CharField(max_length=255, null=True)
-    created_at   = fields.DatetimeField(auto_now_add=True)
+    created_at   = fields.DatetimeField(auto_now_add=True, timezone=True)
 
     class Meta:
         table = "players"

@@ -1,6 +1,6 @@
 # handlers/infect.py
 """Basic infection and vaccine purchase commands."""
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 
 from aiogram import Router, types, F
@@ -33,7 +33,7 @@ async def infect_user(message: types.Message):
     attacker_stats = await get_stats_cached(attacker_lab)
     await process_pathogens(attacker_lab, await get_skill_cached(attacker_lab))
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if attacker_lab.fever_until and attacker_lab.fever_until > now:
         return await message.answer(
             "Вы не можете заражать других, пока у вас горячка. Используйте !купить вакцину."
@@ -126,7 +126,7 @@ async def buy_vaccine(message: types.Message):
     lab = await get_lab_cached(player)
     stats = await get_stats_cached(lab)
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if not lab.fever_until or lab.fever_until <= now:
         return await message.answer("📝 У вас нет горячки. Нет необходимости покупать вакцину")
 
