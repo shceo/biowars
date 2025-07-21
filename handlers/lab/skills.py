@@ -12,47 +12,40 @@ from services.lab_service import (
 from utils.formatting import short_number
 from keyboards.lab_kb import confirm_keyboard, hide_keyboard
 
-
 UPGRADE_PARAMS = {
     "infectivity": {
         "emoji": "🦠",
         "name": "заразности патогена",
-        "base_cost": 5,
-        "growth": 8,
+        "growth": 2.5,
         "command": "++зз",
     },
     "immunity": {
         "emoji": "🛡",
         "name": "иммунитета",
-        "base_cost": 5,
         "growth": 2.6,
         "command": "++иммунитет",
     },
     "lethality": {
         "emoji": "☠️",
         "name": "летальности",
-        "base_cost": 3,
         "growth": 1.95,
         "command": "++летальность",
     },
     "safety": {
         "emoji": "🕵️‍♂️",
         "name": "безопасности",
-        "base_cost": 4,
         "growth": 2.09,
         "command": "++безопасность",
     },
     "qualification": {
         "emoji": "👨‍🔬",
         "name": "квалификации",
-        "base_cost": 6,
         "growth": 2.4,
         "command": "++квалификация",
     },
     "pathogen": {
         "emoji": "🧪",
         "name": "патогена",
-        "base_cost": 4,
         "growth": 2.0,
         "command": "++патоген",
     },
@@ -64,16 +57,17 @@ COMMAND_TO_FIELD = {
 
 
 def calc_cost(field: str, level: int) -> int:
-    """Return price for upgrading `field` from `level` to `level + 1`."""
-    params = UPGRADE_PARAMS[field]
-    base = params["base_cost"]
-    growth = params["growth"] / 100
-    price = base * ((1 + growth) ** (level - 1))
+    """
+    Стоимость апгрейда поля `field` с уровня `level` до `level+1`,
+    по формуле: (level+1)**growth.
+    """
+    growth = UPGRADE_PARAMS[field]["growth"]
+    price = (level + 1) ** growth
     return int(round(price))
 
 
 def calc_total_cost(field: str, level: int, amount: int) -> int:
-    """Return total cost for upgrading `field` by `amount` levels."""
+    """Общая стоимость `amount` апгрейдов подряд."""
     total = 0
     for i in range(amount):
         total += calc_cost(field, level + i)
@@ -81,7 +75,7 @@ def calc_total_cost(field: str, level: int, amount: int) -> int:
 
 
 def calc_max_purchase(field: str, level: int, available: float, limit: int = 100) -> tuple[int, int]:
-    """Return maximum purchasable levels and their cost given available resources."""
+    """Максимум уровней и их цена при лимите и доступных ресурсах."""
     bought = 0
     spent = 0
     while bought < limit:
@@ -92,19 +86,17 @@ def calc_max_purchase(field: str, level: int, available: float, limit: int = 100
         bought += 1
     return bought, spent
 
+
 router = Router()
 
 @router.callback_query(F.data.startswith("upgrade:"))
 async def upgrade_skill(callback: types.CallbackQuery):
-    """Show confirmation dialog for skill upgrade."""
     user_id = callback.from_user.id
-
     try:
-        _, field, owner_str = callback.data.split(":", 2)
+        _, field, owner = callback.data.split(":", 2)
     except ValueError:
         return await callback.answer("Неизвестный параметр", show_alert=True)
-
-    if int(owner_str) != user_id:
+    if int(owner) != user_id:
         return await callback.answer("не шали, шалунишка", show_alert=True)
 
     try:
@@ -112,39 +104,35 @@ async def upgrade_skill(callback: types.CallbackQuery):
     except DoesNotExist:
         return await callback.answer("Сначала отправьте /start", show_alert=True)
 
-    lab = await get_lab_cached(player)
+    lab    = await get_lab_cached(player)
     skills = await get_skill_cached(lab)
-
     params = UPGRADE_PARAMS.get(field)
     if not params:
         return await callback.answer("Неизвестный параметр", show_alert=True)
 
-    current = (getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens)
-
+    current = getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens
     if field == "qualification" and current >= 60:
         return await callback.answer("Достигнут максимальный уровень", show_alert=True)
 
     cost = calc_cost(field, current)
     text = (
-        f"<b>{params['emoji']} Прокачка {params['name']} на 1 ур (до {current + 1})\n"
+        f"<b>{params['emoji']} Прокачка {params['name']} на 1 ур (до {current+1})\n"
         f"🧬 Цена: {short_number(cost)} био-ресурсов</b>\n\n"
-        f"<b><i>Команда: \"</i></b><code>{params['command']} {current + 1}</code><b><i>\"</i></b>"
+        f"<b><i>Команда: \"</i></b>"
+        f"<code>{params['command']} {current+1}</code>"
+        f"<b><i>\"</i></b>"
     )
-
     await callback.message.answer(text, reply_markup=confirm_keyboard(field, user_id))
     await callback.answer()
 
 @router.callback_query(F.data.startswith("confirm:"))
 async def confirm_upgrade(callback: types.CallbackQuery):
-    """Apply upgrade after confirmation."""
     user_id = callback.from_user.id
-
     try:
-        _, field, owner_str = callback.data.split(":", 2)
+        _, field, owner = callback.data.split(":", 2)
     except ValueError:
         return await callback.answer("Неизвестный параметр", show_alert=True)
-
-    if int(owner_str) != user_id:
+    if int(owner) != user_id:
         return await callback.answer("не шали, шалунишка", show_alert=True)
 
     try:
@@ -152,16 +140,12 @@ async def confirm_upgrade(callback: types.CallbackQuery):
     except DoesNotExist:
         return await callback.answer("Сначала отправьте /start", show_alert=True)
 
-    lab = await get_lab_cached(player)
+    lab    = await get_lab_cached(player)
     skills = await get_skill_cached(lab)
-    stats = await get_stats_cached(lab)
+    stats  = await get_stats_cached(lab)
+    params = UPGRADE_PARAMS[field]
 
-    params = UPGRADE_PARAMS.get(field)
-    if not params:
-        return await callback.answer("Неизвестный параметр", show_alert=True)
-
-    current = (getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens)
-
+    current = getattr(skills, field, 0) if field != "pathogen" else lab.max_pathogens
     if field == "qualification" and current >= 60:
         return await callback.answer("Достигнут максимальный уровень", show_alert=True)
 
@@ -172,42 +156,35 @@ async def confirm_upgrade(callback: types.CallbackQuery):
     await stats.save()
 
     if field == "pathogen":
-        old_value = lab.max_pathogens
+        old = lab.max_pathogens
         lab.max_pathogens += 1
         lab.free_pathogens += 1
         await lab.save()
     else:
-        old_value = getattr(skills, field, 0)
-        setattr(skills, field, old_value + 1)
+        old = getattr(skills, field, 0)
+        setattr(skills, field, old+1)
         await skills.save()
-
         if field == "qualification":
-            from services.lab_service import process_pathogens
             await process_pathogens(lab, skills)
 
-    text = (
-        f"{params['emoji']} Усиление {params['name']} на {old_value} ур (до {old_value + 1}) выполнено \n"
-        f"🎉 Потрачено: 🧬 {short_number(cost)} био-ресурсов"
+    await callback.message.edit_text(
+        f"{params['emoji']} Усиление {params['name']} на {old} ур (до {old+1}) выполнено\n"
+        f"🎉 Потрачено: 🧬 {short_number(cost)} био-ресурсов",
+        reply_markup=hide_keyboard()
     )
-
-    await callback.message.edit_text(text, reply_markup=hide_keyboard())
     await callback.answer()
-
-
 
 @router.callback_query(F.data == "hide")
 async def hide_message(callback: types.CallbackQuery):
     await callback.message.delete()
     await callback.answer()
 
-
 @router.message(F.text.regexp(r'^[/\.]?\+\+'))
 async def upgrade_by_command(message: types.Message):
-    """Handle text commands for skill upgrades."""
-    text = message.text.lstrip('./').strip()
-    parts = text.split(maxsplit=1)
+    text    = message.text.lstrip('./').strip()
+    parts   = text.split(maxsplit=1)
     command = parts[0].lower()
-    arg = parts[1] if len(parts) > 1 else '1'
+    arg     = parts[1] if len(parts)>1 else '1'
 
     field = COMMAND_TO_FIELD.get(command)
     if not field:
@@ -218,26 +195,24 @@ async def upgrade_by_command(message: types.Message):
     except DoesNotExist:
         return await message.answer("Сначала отправьте /start")
 
-    lab = await get_lab_cached(player)
+    lab    = await get_lab_cached(player)
     skills = await get_skill_cached(lab)
-    stats = await get_stats_cached(lab)
+    stats  = await get_stats_cached(lab)
 
-    current = getattr(skills, field, 0) if field != 'pathogen' else lab.max_pathogens
+    current = getattr(skills, field, 0) if field!='pathogen' else lab.max_pathogens
 
     if arg.lower() == 'макс':
-        level_limit = 60 - current if field == 'qualification' else 100
-        amount, cost = calc_max_purchase(field, current, stats.bio_resource, limit=level_limit)
+        limit = 60-current if field=='qualification' else 100
+        amount, cost = calc_max_purchase(field, current, stats.bio_resource, limit=limit)
         if amount == 0:
             return await message.answer("Недостаточно био-ресурсов")
     else:
         try:
             amount = int(arg)
         except ValueError:
-            return await message.answer("Укажите число уровней или 'макс'")
-        limit = 60 - current if field == 'qualification' else 100
+            return await message.answer("Укажите число или 'макс'")
+        limit = 60-current if field=='qualification' else 100
         amount = max(1, min(limit, amount))
-        if amount <= 0:
-            return await message.answer("Достигнут максимальный уровень")
         cost = calc_total_cost(field, current, amount)
         if cost > stats.bio_resource:
             return await message.answer("Недостаточно био-ресурсов")
@@ -251,17 +226,14 @@ async def upgrade_by_command(message: types.Message):
         new_level = lab.max_pathogens
         await lab.save()
     else:
-        setattr(skills, field, current + amount)
-        new_level = current + amount
+        setattr(skills, field, current+amount)
+        new_level = current+amount
         await skills.save()
-
-        if field == 'qualification':
+        if field=='qualification':
             await process_pathogens(lab, skills)
 
     params = UPGRADE_PARAMS[field]
-    text = (
+    await message.answer(
         f"{params['emoji']}<b> Усиление {params['name']} на {amount} (до {new_level}) выполнено\n"
         f"🎉 Потрачено: 🧬 {short_number(cost)} био-ресурсов</b>"
     )
-
-    await message.answer(text)
