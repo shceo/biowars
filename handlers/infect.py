@@ -79,6 +79,9 @@ async def infect_user(message: types.Message):
             f"Повторное заражение этого пользователя будет доступно через {hours} ч. {minutes} мин."
         )
 
+    # фиксируем время заражения сразу, чтобы избежать спама
+    _infection_cd[cooldown_key] = now
+
     target_player, _ = await Player.get_or_create(
         telegram_id=target_user.id,
         defaults={"full_name": target_user.full_name},
@@ -134,7 +137,6 @@ async def infect_user(message: types.Message):
     except Exception:
         pass
 
-    _infection_cd[cooldown_key] = now
 
 
 @router.message(F.text.regexp(r'^!купить\s+вакцину$', flags=re.IGNORECASE))

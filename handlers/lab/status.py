@@ -5,14 +5,13 @@ from datetime import datetime, timezone
 
 from aiogram import Router, types, F
 from aiogram.filters import Command
-from tortoise.exceptions import DoesNotExist
-
 from services.lab_service import (
     get_player_cached,
     get_lab_cached,
     get_skill_cached,
     get_stats_cached,
     process_pathogens,
+    register_player_if_needed,
 )
 from utils.formatting import short_number
 
@@ -27,11 +26,11 @@ router = Router()
 async def cmd_lab_status(message: types.Message):
     user_id = message.from_user.id
 
-    # 1) Проверка, что игрок есть
-    try:
-        player = await get_player_cached(user_id)
-    except DoesNotExist:
-        return await message.answer("Сначала отправьте /start, чтобы зарегистрироваться.")
+    # 1) Проверка/создание игрока и лаборатории
+    player = await register_player_if_needed(
+        user_id,
+        message.from_user.full_name,
+    )
 
     # 2) Загружаем лабораторию + связи
     lab = await get_lab_cached(player)
