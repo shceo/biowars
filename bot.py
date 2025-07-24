@@ -5,6 +5,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+
+from middlewares.cooldown import CooldownMiddleware
 from tortoise import Tortoise
 
 from config import settings  # config.py должно использовать pydantic-settings
@@ -25,6 +27,7 @@ async def main():
         ),
     )
     dp = Dispatcher(storage=MemoryStorage())
+    dp.message.middleware.register(CooldownMiddleware(1.0))
 
     # Регистрируем все роутеры
     from handlers.start import router as start_router

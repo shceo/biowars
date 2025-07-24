@@ -88,3 +88,35 @@ async def process_pathogens(lab: Laboratory, skills: Skill) -> None:
         lab.next_pathogen_at = None
 
     await lab.save()
+
+
+async def register_player_if_needed(tg_id: int, full_name: str) -> Player:
+    """Return Player object creating initial lab if needed."""
+    player, created = await Player.get_or_create(
+        telegram_id=tg_id,
+        defaults={"full_name": full_name},
+    )
+
+    if created:
+        now = datetime.now(timezone.utc)
+        lab = await Laboratory.create(
+            player=player,
+            free_pathogens=10,
+            max_pathogens=10,
+            next_pathogen_at=now + timedelta(minutes=60),
+        )
+        await Skill.create(
+            lab=lab,
+            infectivity=1,
+            immunity=1,
+            lethality=1,
+            safety=1,
+            qualification=1,
+        )
+        await Statistics.create(lab=lab)
+        # prime caches with newly created objects
+        expires = time.time() + _CACHE_TTL
+        _player_cache[tg_id] = (player, expires)
+        _lab_cache[player.id] = (lab, expires)
+
+    return player
