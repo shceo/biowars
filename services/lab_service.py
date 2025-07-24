@@ -99,11 +99,13 @@ async def register_player_if_needed(tg_id: int, full_name: str) -> Player:
 
     if created:
         now = datetime.now(timezone.utc)
+        default_name = f"им. {full_name}"[:30]
         lab = await Laboratory.create(
             player=player,
             free_pathogens=10,
             max_pathogens=10,
             next_pathogen_at=now + timedelta(minutes=60),
+            lab_name=default_name,
         )
         await Skill.create(
             lab=lab,

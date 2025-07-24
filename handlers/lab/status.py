@@ -73,9 +73,10 @@ async def cmd_lab_status(message: types.Message):
         blocked_pct = "0%"
 
     # 8) HTML‑текст
+    display_name = lab.lab_name or message.from_user.full_name
     text = (
         f"<b>🔬 Лаборатория игрока:</b> "
-        f"<a href=\"tg://openmessage?user_id={user_id}\">{message.from_user.full_name}</a>\n"
+        f"<a href=\"tg://openmessage?user_id={user_id}\">{display_name}</a>\n"
         f"{corp_line}\n"
 
         f"<b>🪫 Активность: [{blocks}] {lab.activity}%</b>\n"
