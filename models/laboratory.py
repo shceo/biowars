@@ -20,6 +20,7 @@ class Laboratory(models.Model):
     free_pathogens     = fields.IntField(default=0)
     max_pathogens      = fields.IntField(default=0)
     pathogen_name      = fields.CharField(max_length=100, null=True)
+    lab_name           = fields.CharField(max_length=30, null=True)
 
     class Meta:
         table = "laboratories"

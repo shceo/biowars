@@ -38,6 +38,10 @@ async def main():
     dp.include_router(lab_skills_router)
     from handlers.lab.pathogen_name import router as pathogen_name_router
     dp.include_router(pathogen_name_router)
+    from handlers.lab.lab_name import router as lab_name_router
+    dp.include_router(lab_name_router)
+    from handlers.lab.minilab import router as minilab_router
+    dp.include_router(minilab_router)
     from handlers.admin import router as admin_router
     dp.include_router(admin_router)
     from handlers.infect import router as infect_router

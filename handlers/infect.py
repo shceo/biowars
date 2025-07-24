@@ -153,14 +153,14 @@ async def buy_vaccine(message: types.Message):
 
     now = datetime.now(timezone.utc)
     if not lab.fever_until or lab.fever_until <= now:
-        return await message.answer("📝 У вас нет горячки. Нет необходимости покупать вакцину")
+        return await message.answer("<b>📝 У вас нет горячки.</b>")
 
     seconds_left = int((lab.fever_until - now).total_seconds())
     price_per_second = 2000 / (60 * 60)
     cost = max(0, int(price_per_second * seconds_left))
 
     if cost > stats.bio_resource:
-        return await message.answer("Недостаточно био-ресурсов")
+        return await message.answer("<b>❌ Не хватает био-ресурсов на вакцину.</b>")
 
     stats.bio_resource -= cost
     await stats.save()
@@ -169,5 +169,6 @@ async def buy_vaccine(message: types.Message):
     await lab.save()
 
     await message.answer(
-        f"💉 Вакцина излечила вас от горячки.\n🧾 Потрачено 🧬 {short_number(cost)} био-ресурсов"
+        f"💉 <b>Вы излечились от горячки.</b>\n"
+        f"🧬 <b>Стоимость вакцины</b> : <code>{short_number(cost)}</code> био-ресурсов"
     )
