@@ -117,7 +117,7 @@ async def infect_user(message: types.Message):
     hours = minutes // 60
     minutes %= 60
     text = (
-        f"🦠 {attacker_link} 🥑 подверг заражению {pathogen_phrase} {target_link}\n"
+        f"🦠 {attacker_link} подверг заражению {pathogen_phrase} {target_link}\n"
         f"<blockquote>☠️ Горячка на {fever_minutes} минут\n"
         f"🤒 Заражение на {infection_days} дней\n"
         f"☣️ +1k био-опыта</blockquote>\n"
