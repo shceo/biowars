@@ -1,5 +1,7 @@
 from aiogram import Router, types, F
 import re
+
+from utils.validation import contains_link_or_mention
 from tortoise.exceptions import DoesNotExist
 
 from services.lab_service import get_player_cached, get_lab_cached
@@ -30,6 +32,9 @@ async def set_lab_name(message: types.Message):
     name = match.group(1).strip()
     if len(name) > 30:
         return await message.answer("❌ Имя лаборатории должно быть не длиннее 30 символов.")
+
+    if contains_link_or_mention(name):
+        return await message.answer("📋 Ссылки в имени лаборатории запрещены.")
 
     try:
         player = await get_player_cached(message.from_user.id)

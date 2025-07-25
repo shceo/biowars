@@ -1,5 +1,7 @@
 from aiogram import Router, types, F
 import re
+
+from utils.validation import contains_link_or_mention
 from tortoise.exceptions import DoesNotExist
 from services.lab_service import get_player_cached, get_lab_cached
 from models.laboratory import Laboratory
@@ -32,6 +34,10 @@ async def set_pathogen_name(message: types.Message):
     # Проверка длины
     if len(name) > 20:
         return await message.answer("❌ Имя патогена должно быть не длиннее 20 символов.")
+
+    # Запрещаем ссылки и упоминания
+    if contains_link_or_mention(name):
+        return await message.answer("📋 Ссылки в имени патогена запрещены.")
 
     try:
         player = await get_player_cached(message.from_user.id)
