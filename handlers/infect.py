@@ -117,15 +117,18 @@ async def infect_user(message: types.Message):
     hours = minutes // 60
     minutes %= 60
     text = (
-        f"🦠 {attacker_link} 🥑 подверг заражению {pathogen_phrase} {target_link}\n"
+        "заразил:\n"
+        f"🦠 {attacker_link} подверг заражению {pathogen_phrase} {target_link}\n"
         f"<blockquote>☠️ Горячка на {fever_minutes} минут\n"
         f"🤒 Заражение на {infection_days} дней\n"
-        f"☣️ +1k био-опыта</blockquote>\n"
-        f"кд:\n"
-        f"⏱️ Повторное заражение этого пользователя будет доступно через "
-        f"<code>{hours} ч. {minutes} мин</code>."
+        f"☣️ +1k био-опыта</blockquote>"
     )
     await message.answer(text)
+
+    await message.answer(
+        "⏱️ Повторное заражение этого пользователя будет доступно через "
+        f"<code>{hours} ч. {minutes} мин</code>."
+    )
 
     try:
         await message.bot.send_message(
