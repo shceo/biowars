@@ -91,6 +91,12 @@ async def infect_user(message: types.Message):
     target_lab = await get_lab_cached(target_player)
     target_stats = await get_stats_cached(target_lab)
 
+    # Опыт, который получит атакующий и потеряет цель
+    if target_stats.bio_experience <= 0:
+        exp_transfer = 1
+    else:
+        exp_transfer = max(1, int(target_stats.bio_experience * 0.1))
+
     attacker_lab.free_pathogens -= 1
     await attacker_lab.save()
 
@@ -100,9 +106,10 @@ async def infect_user(message: types.Message):
     target_lab.infection_until = now + timedelta(days=infection_days)
     await target_lab.save()
 
-    attacker_stats.bio_experience += 1000
+    attacker_stats.bio_experience += exp_transfer
     await attacker_stats.save()
     target_stats.infected_count += 1
+    target_stats.bio_experience = max(0, target_stats.bio_experience - exp_transfer)
     await target_stats.save()
 
     attacker_link = f"<a href=\"tg://openmessage?user_id={attacker_id}\">{message.from_user.full_name}</a>"
@@ -118,7 +125,7 @@ async def infect_user(message: types.Message):
         f"🦠 {attacker_link} подверг заражению {pathogen_phrase} {target_link}\n"
         f"<blockquote>☠️ Горячка на {fever_minutes} минут\n"
         f"🤒 Заражение на {infection_days} дней\n"
-        f"☣️ +1k био-опыта</blockquote>"
+        f"☣️ +{short_number(exp_transfer)} био-опыта</blockquote>"
     )
     await message.answer(text, parse_mode="HTML")
 
@@ -132,7 +139,7 @@ async def infect_user(message: types.Message):
                 f"<blockquote>🦠 {attacker_link} подверг заражению {pathogen_phrase} {target_link}⁬\n"
                 f"☠️ Горячка на {fever_minutes} минут\n"
                 f"🤒 Заражение на {infection_days} дней\n"
-                f"☣️ +263 био-опыта</blockquote>"
+                f"☣️ -{short_number(exp_transfer)} био-опыта</blockquote>"
             ),
             parse_mode="HTML",
         )
