@@ -112,11 +112,18 @@ async def infect_user(message: types.Message):
     else:
         pathogen_phrase = "неизвестным патогеном"
 
+    cooldown = timedelta(hours=3)
+    minutes = int(cooldown.total_seconds() // 60)
+    hours = minutes // 60
+    minutes %= 60
     text = (
-        f"🦠 {attacker_link} подверг заражению {pathogen_phrase} {target_link}\n"
-        f"☠️ Горячка на {fever_minutes} минут\n"
+        f"🦠 {attacker_link} 🥑 подверг заражению {pathogen_phrase} {target_link}\n"
+        f"<blockquote>☠️ Горячка на {fever_minutes} минут\n"
         f"🤒 Заражение на {infection_days} дней\n"
-        f"☣️ +1k био-опыта"
+        f"☣️ +1k био-опыта</blockquote>\n"
+        f"кд:\n"
+        f"⏱️ Повторное заражение этого пользователя будет доступно через "
+        f"<code>{hours} ч. {minutes} мин</code>."
     )
     await message.answer(text)
 
@@ -139,7 +146,9 @@ async def infect_user(message: types.Message):
 
 
 
-@router.message(F.text.regexp(r'^!купить\s+вакцину$', flags=re.IGNORECASE))
+@router.message(
+    F.text.regexp(r'^[!./]?купить\s+вакцину$', flags=re.IGNORECASE)
+)
 async def buy_vaccine(message: types.Message):
     """Purchase a vaccine to cure fever."""
     user_id = message.from_user.id
