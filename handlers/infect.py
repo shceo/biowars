@@ -35,7 +35,8 @@ async def infect_user(message: types.Message):
 
     attacker_lab = await get_lab_cached(attacker_player)
     attacker_stats = await get_stats_cached(attacker_lab)
-    await process_pathogens(attacker_lab, await get_skill_cached(attacker_lab))
+    attacker_skills = await get_skill_cached(attacker_lab)
+    await process_pathogens(attacker_lab, attacker_skills)
 
     now = datetime.now(timezone.utc)
     if attacker_lab.fever_until and attacker_lab.fever_until > now:
@@ -93,8 +94,8 @@ async def infect_user(message: types.Message):
     attacker_lab.free_pathogens -= 1
     await attacker_lab.save()
 
-    fever_minutes = 60
-    infection_days = 3
+    fever_minutes = min(attacker_skills.lethality, 60)
+    infection_days = attacker_skills.lethality
     target_lab.fever_until = now + timedelta(minutes=fever_minutes)
     target_lab.infection_until = now + timedelta(days=infection_days)
     await target_lab.save()
