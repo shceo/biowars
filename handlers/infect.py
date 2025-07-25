@@ -13,6 +13,8 @@ from services.lab_service import (
     get_skill_cached,
     get_stats_cached,
     process_pathogens,
+    register_infection,
+    cleanup_expired_infections,
 )
 from models.player import Player
 from utils.formatting import short_number
@@ -90,6 +92,8 @@ async def infect_user(message: types.Message):
     )
     target_lab = await get_lab_cached(target_player)
     target_stats = await get_stats_cached(target_lab)
+    await cleanup_expired_infections(attacker_lab)
+    await cleanup_expired_infections(target_lab)
 
     # Опыт, который получит атакующий и потеряет цель
     if target_stats.bio_experience <= 0:
@@ -107,10 +111,10 @@ async def infect_user(message: types.Message):
     await target_lab.save()
 
     attacker_stats.bio_experience += exp_transfer
-    await attacker_stats.save()
-    target_stats.infected_count += 1
     target_stats.bio_experience = max(0, target_stats.bio_experience - exp_transfer)
+    await attacker_stats.save()
     await target_stats.save()
+    await register_infection(attacker_lab, target_lab, infection_days)
 
     attacker_link = f"<a href=\"tg://openmessage?user_id={attacker_id}\">{message.from_user.full_name}</a>"
     target_link = f"<a href=\"tg://openmessage?user_id={target_user.id}\">{target_user.full_name}</a>"

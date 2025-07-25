@@ -5,6 +5,7 @@ from .skill import Skill
 from .statistics import Statistics
 from .corporation import Corporation   # если есть
 from .pathogen import Pathogen
+from .infection import Infection
 
 __all__ = [
     "Player",
@@ -13,4 +14,5 @@ __all__ = [
     "Statistics",
     "Corporation",  # если используете
     "Pathogen",
+    "Infection",
 ]
