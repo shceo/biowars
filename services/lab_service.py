@@ -7,6 +7,7 @@ from models.player import Player
 from models.laboratory import Laboratory
 from models.skill import Skill
 from models.statistics import Statistics
+from models.infection import Infection
 
 # Простое кеширование в памяти, чтобы не обращаться к БД каждый раз
 _CACHE_TTL = 60  # секунды
@@ -122,3 +123,68 @@ async def register_player_if_needed(tg_id: int, full_name: str) -> Player:
         _lab_cache[player.id] = (lab, expires)
 
     return player
+
+
+async def cleanup_expired_infections(lab: Laboratory) -> None:
+    """Remove expired infections related to this lab and update stats."""
+    now = datetime.now(timezone.utc)
+    expired_attacks = await Infection.filter(attacker_lab=lab, expires_at__lte=now).prefetch_related("target_lab")
+    for inf in expired_attacks:
+        stats = await get_stats_cached(lab)
+        target_stats = await get_stats_cached(inf.target_lab)
+        stats.infected_count = max(0, stats.infected_count - 1)
+        target_stats.own_diseases = max(0, target_stats.own_diseases - 1)
+        await stats.save()
+        await target_stats.save()
+        await inf.delete()
+        active_other = await Infection.filter(target_lab=inf.target_lab, expires_at__gt=now).exists()
+        if not active_other:
+            inf.target_lab.infection_until = None
+            await inf.target_lab.save()
+
+    expired_defenses = await Infection.filter(target_lab=lab, expires_at__lte=now).prefetch_related("attacker_lab")
+    for inf in expired_defenses:
+        stats = await get_stats_cached(lab)
+        attacker_stats = await get_stats_cached(inf.attacker_lab)
+        attacker_stats.infected_count = max(0, attacker_stats.infected_count - 1)
+        stats.own_diseases = max(0, stats.own_diseases - 1)
+        await attacker_stats.save()
+        await stats.save()
+        await inf.delete()
+
+    active = await Infection.filter(target_lab=lab, expires_at__gt=now).exists()
+    if not active and lab.infection_until and lab.infection_until <= now:
+        lab.infection_until = None
+        await lab.save()
+
+
+async def register_infection(attacker_lab: Laboratory, target_lab: Laboratory, duration_days: int) -> None:
+    """Register a new infection ensuring unique counts and handling replacements."""
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=duration_days)
+
+    existing = await Infection.filter(attacker_lab=attacker_lab, target_lab=target_lab, expires_at__gt=now).first()
+    if existing:
+        existing.expires_at = expires_at
+        await existing.save()
+        return
+
+    other = await Infection.filter(target_lab=target_lab, expires_at__gt=now).first()
+    if other:
+        old_attacker_stats = await get_stats_cached(other.attacker_lab)
+        target_stats = await get_stats_cached(target_lab)
+        old_attacker_stats.infected_count = max(0, old_attacker_stats.infected_count - 1)
+        target_stats.own_diseases = max(0, target_stats.own_diseases - 1)
+        await old_attacker_stats.save()
+        await target_stats.save()
+        await other.delete()
+
+    await Infection.create(attacker_lab=attacker_lab, target_lab=target_lab, expires_at=expires_at)
+    target_lab.infection_until = expires_at
+    await target_lab.save()
+    attacker_stats = await get_stats_cached(attacker_lab)
+    target_stats = await get_stats_cached(target_lab)
+    attacker_stats.infected_count += 1
+    target_stats.own_diseases += 1
+    await attacker_stats.save()
+    await target_stats.save()

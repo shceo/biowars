@@ -12,6 +12,7 @@ from services.lab_service import (
     get_stats_cached,
     process_pathogens,
     register_player_if_needed,
+    cleanup_expired_infections,
 )
 from utils.formatting import short_number
 
@@ -36,6 +37,7 @@ async def cmd_lab_status(message: types.Message):
     lab = await get_lab_cached(player)
     stats = await get_stats_cached(lab)
     skills = await get_skill_cached(lab)
+    await cleanup_expired_infections(lab)
 
     # update pathogen production based on current time
     await process_pathogens(lab, skills)

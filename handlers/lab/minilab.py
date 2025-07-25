@@ -6,6 +6,7 @@ from services.lab_service import (
     get_stats_cached,
     get_skill_cached,
     process_pathogens,
+    cleanup_expired_infections,
 )
 from utils.formatting import short_number
 
@@ -24,6 +25,7 @@ async def cmd_minilab(message: types.Message):
 
     lab = await get_lab_cached(player)
     stats = await get_stats_cached(lab)
+    await cleanup_expired_infections(lab)
     await process_pathogens(lab, await get_skill_cached(lab))
 
     display_name = lab.lab_name or message.from_user.full_name
