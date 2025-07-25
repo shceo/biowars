@@ -1,7 +1,6 @@
 # handlers/infect.py
 """Basic infection and vaccine purchase commands."""
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Tuple
 import re
 
 from aiogram import Router, types, F
@@ -18,9 +17,6 @@ from models.player import Player
 from utils.formatting import short_number
 
 router = Router()
-
-# ключ – (attacker_id, target_id), значение – время последнего заражения
-_infection_cd: Dict[Tuple[int, int], datetime] = {}
 
 
 @router.message(F.text.regexp(r'^заразить', flags=re.IGNORECASE))
@@ -68,20 +64,6 @@ async def infect_user(message: types.Message):
     if target_user.id == attacker_id:
         return await message.answer("Нельзя заразить себя")
 
-    cooldown_key = (attacker_id, target_user.id)
-    last_attack = _infection_cd.get(cooldown_key)
-    if last_attack and now - last_attack < timedelta(hours=3):
-        remaining = timedelta(hours=3) - (now - last_attack)
-        minutes = int(remaining.total_seconds() // 60)
-        hours = minutes // 60
-        minutes %= 60
-        return await message.answer(
-            f"Повторное заражение этого пользователя будет доступно через {hours} ч. {minutes} мин."
-        )
-
-    # фиксируем время заражения сразу, чтобы избежать спама
-    _infection_cd[cooldown_key] = now
-
     target_player, _ = await Player.get_or_create(
         telegram_id=target_user.id,
         defaults={"full_name": target_user.full_name},
@@ -106,29 +88,13 @@ async def infect_user(message: types.Message):
     attacker_link = f"<a href=\"tg://openmessage?user_id={attacker_id}\">{message.from_user.full_name}</a>"
     target_link = f"<a href=\"tg://openmessage?user_id={target_user.id}\">{target_user.full_name}</a>"
 
-    pathogen_name = attacker_lab.pathogen_name
-    if pathogen_name:
-        pathogen_phrase = f"патогеном «{pathogen_name}»"
-    else:
-        pathogen_phrase = "неизвестным патогеном"
-
-    cooldown = timedelta(hours=3)
-    minutes = int(cooldown.total_seconds() // 60)
-    hours = minutes // 60
-    minutes %= 60
     text = (
-        "заразил:\n"
-        f"🦠 {attacker_link} подверг заражению {pathogen_phrase} {target_link}\n"
-        f"<blockquote>☠️ Горячка на {fever_minutes} минут\n"
+        f"🦠 {attacker_link} подверг заражению неизвестным патогеном {target_link}\n"
+        f"☠️ Горячка на {fever_minutes} минут\n"
         f"🤒 Заражение на {infection_days} дней\n"
-        f"☣️ +1k био-опыта</blockquote>\n"
+        f"☣️ +1k био-опыта"
     )
     await message.answer(text)
-
-    await message.answer(
-        "⏱️ Повторное заражение этого пользователя будет доступно через "
-        f"<code>{hours} ч. {minutes} мин</code>."
-    )
 
     try:
         await message.bot.send_message(
@@ -137,7 +103,7 @@ async def infect_user(message: types.Message):
                 "🕵️‍♂️ Служба безопасности Вашей лаборатории докладывает:\n"
                 "Была произведена как минимум 1 попытка Вашего заражения\n"
                 f"Организатор заражения: {attacker_link}\n\n"
-                f"<blockquote>🦠 {attacker_link} подверг заражению {pathogen_phrase} {target_link}⁬\n"
+                f"<blockquote>🦠 {attacker_link} подверг заражению патогеном «Autumn symphony» {target_link}⁬\n"
                 f"☠️ Горячка на {fever_minutes} минут\n"
                 f"🤒 Заражение на {infection_days} дней\n"
                 f"☣️ +263 био-опыта</blockquote>"
@@ -148,10 +114,7 @@ async def infect_user(message: types.Message):
         pass
 
 
-
-@router.message(
-    F.text.regexp(r'^[!./]?купить\s+вакцину$', flags=re.IGNORECASE)
-)
+@router.message(F.text.regexp(r'^!купить\s+вакцину$', flags=re.IGNORECASE))
 async def buy_vaccine(message: types.Message):
     """Purchase a vaccine to cure fever."""
     user_id = message.from_user.id
@@ -165,14 +128,14 @@ async def buy_vaccine(message: types.Message):
 
     now = datetime.now(timezone.utc)
     if not lab.fever_until or lab.fever_until <= now:
-        return await message.answer("<b>📝 У вас нет горячки.</b>")
+        return await message.answer("📝 У вас нет горячки. Нет необходимости покупать вакцину")
 
     seconds_left = int((lab.fever_until - now).total_seconds())
     price_per_second = 2000 / (60 * 60)
     cost = max(0, int(price_per_second * seconds_left))
 
     if cost > stats.bio_resource:
-        return await message.answer("<b>❌ Не хватает био-ресурсов на вакцину.</b>")
+        return await message.answer("Недостаточно био-ресурсов")
 
     stats.bio_resource -= cost
     await stats.save()
@@ -181,6 +144,5 @@ async def buy_vaccine(message: types.Message):
     await lab.save()
 
     await message.answer(
-        f"💉 <b>Вы излечились от горячки.</b>\n"
-        f"🧬 <b>Стоимость вакцины</b> : <code>{short_number(cost)}</code> био-ресурсов"
+        f"💉 Вакцина излечила вас от горячки.\n🧾 Потрачено 🧬 {short_number(cost)} био-ресурсов"
     )
