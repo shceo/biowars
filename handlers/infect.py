@@ -72,14 +72,15 @@ async def infect_user(message: types.Message):
     last_attack = _infection_cd.get(cooldown_key)
     if last_attack and now - last_attack < timedelta(hours=3):
         remaining = timedelta(hours=3) - (now - last_attack)
-        minutes = int(remaining.total_seconds() // 60)
-        hours = minutes // 60
-        minutes %= 60
+        minutes_left = int(remaining.total_seconds() // 60)
+        hours_left = minutes_left // 60
+        minutes_left %= 60
         return await message.answer(
-            f"Повторное заражение этого пользователя будет доступно через {hours} ч. {minutes} мин."
+            "⏱️ Повторное заражение этого пользователя будет доступно через "
+            f"<code>{hours_left} ч. {minutes_left} мин</code>.",
+            parse_mode="HTML",
         )
 
-    # фиксируем время заражения сразу, чтобы избежать спама
     _infection_cd[cooldown_key] = now
 
     target_player, _ = await Player.get_or_create(
@@ -118,7 +119,7 @@ async def infect_user(message: types.Message):
         f"🤒 Заражение на {infection_days} дней\n"
         f"☣️ +1k био-опыта"
     )
-    await message.answer(text)
+    await message.answer(text, parse_mode="HTML")
 
     try:
         await message.bot.send_message(
